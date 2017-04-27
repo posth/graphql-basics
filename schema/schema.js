@@ -3,7 +3,7 @@
 
 //Pulling in the GraphQL library
 const graphql = require('graphql');
-const _ = require('lodash');
+const axios = require('axios');
 
 //Grabbing multiple properties from the GraphQL library
 const {
@@ -12,12 +12,6 @@ const {
     GraphQLInt,
     GraphQLSchema
 } = graphql;
-
-//TEMP HARDCODED USERS
-const users = [
-    { id: '23', firstName: 'Bill', age: 20 },
-    { id: '47', firstName: 'Samantha', age: 21}
-];
 
 //GraphQLObjectType will tell GraphQL what a user object looks like (properties it has)
 const UserType = new GraphQLObjectType({
@@ -40,8 +34,11 @@ const RootQuery = new GraphQLObjectType({
             type: UserType,
             args: { id: { type: GraphQLString } },
             resolve(parentValue, args) {
-                //walking through users and find the one with the args.id 
-                return _.find(users, { id: args.id });
+                //request to the JSON server
+                //this is a promise that will resolve into the data you want
+                return axios.get(`http://localhost:3000/users/${args.id}`)
+                    .then(resp => resp.data);
+                    //axios responses nests the data in data:, which graphQL already does, so you look for data in that response 
             }
         }
     }
