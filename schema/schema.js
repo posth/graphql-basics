@@ -13,13 +13,30 @@ const {
     GraphQLSchema
 } = graphql;
 
+//IMPORTANT - has to be defined before the UserType - order of definitions is important
+const CompanyType = new GraphQLObjectType({
+    name: 'Company',
+    fields: {
+        id: { type: GraphQLString },
+        name: { type: GraphQLString },
+        description: { type: GraphQLString }
+    }
+});
+
 //GraphQLObjectType will tell GraphQL what a user object looks like (properties it has)
 const UserType = new GraphQLObjectType({
     name: 'User',
     fields: {
         id: { type: GraphQLString },
         firstName: { type: GraphQLString },
-        age: { type: GraphQLInt }
+        age: { type: GraphQLInt },
+        company: { 
+            type: CompanyType,
+            resolve(parentValue, args) {
+                return axios.get(`http://localhost:3000/companies/${parentValue.companyId}`)
+                    .then(resp => resp.data);
+            }
+        }
     }
 });
 
