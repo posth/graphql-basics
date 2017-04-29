@@ -10,34 +10,44 @@ const {
     GraphQLObjectType,
     GraphQLString,
     GraphQLInt,
-    GraphQLSchema
+    GraphQLSchema,
+    GraphQLList
 } = graphql;
 
 //IMPORTANT - has to be defined before the UserType - order of definitions is important
 const CompanyType = new GraphQLObjectType({
     name: 'Company',
-    fields: {
+    //Wrap the fields property in an arrow function for circular dependencies of data
+    fields: () => ({
         id: { type: GraphQLString },
         name: { type: GraphQLString },
-        description: { type: GraphQLString }
-    }
+        description: { type: GraphQLString },
+        users: {
+            //We can receive more than 1 user when going from company to user
+            type: new GraphQLList(UserType),
+            resolve(parentValue, args) {
+                return axios.get(`http://localhost:3000/companies/${parentValue.id}/users`)
+                    .then(resp => resp.data)
+            }
+        }
+    })
 });
 
 //GraphQLObjectType will tell GraphQL what a user object looks like (properties it has)
 const UserType = new GraphQLObjectType({
     name: 'User',
-    fields: {
+    fields: () => ({
         id: { type: GraphQLString },
         firstName: { type: GraphQLString },
         age: { type: GraphQLInt },
-        company: { 
+        company: {
             type: CompanyType,
             resolve(parentValue, args) {
                 return axios.get(`http://localhost:3000/companies/${parentValue.companyId}`)
                     .then(resp => resp.data);
             }
         }
-    }
+    })
 });
 
 //Entry point into the GraphQL Db to get information - jump and land on a specific node in the graph of all the data
@@ -55,7 +65,16 @@ const RootQuery = new GraphQLObjectType({
                 //this is a promise that will resolve into the data you want
                 return axios.get(`http://localhost:3000/users/${args.id}`)
                     .then(resp => resp.data);
-                    //axios responses nests the data in data:, which graphQL already does, so you look for data in that response 
+                //axios responses nests the data in data:, which graphQL already does, so you look for data in that response 
+            }
+        },
+        //Being able to root query into the company directly - so you can ask all the users that belong to company X
+        company: {
+            type: CompanyType,
+            args: { id: { type: GraphQLString } },
+            resolve(parentValue, args) {
+                return axios.get(`http://localhost:3000/companies/${args.id}`)
+                    .then(resp => resp.data);
             }
         }
     }
