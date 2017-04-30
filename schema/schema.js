@@ -11,7 +11,8 @@ const {
     GraphQLString,
     GraphQLInt,
     GraphQLSchema,
-    GraphQLList
+    GraphQLList,
+    GraphQLNonNull
 } = graphql;
 
 //IMPORTANT - has to be defined before the UserType - order of definitions is important
@@ -80,8 +81,44 @@ const RootQuery = new GraphQLObjectType({
     }
 });
 
+//Mutations used to edit data - change underlying data
+const mutation = new GraphQLObjectType({
+    name: 'Mutation',
+    fields: {
+        //Fields of a mutation describe what the mutation does to the data
+        addUser: {
+            //Type here refers to the type of data that will be returned from the resolve function
+            type: UserType,
+            //args are what are need to be able to resolve the data back
+            args: {
+                //GraphQLNonNull means that this is a necessary field when making the mutation
+                firstName: { type: new GraphQLNonNull(GraphQLString) },
+                age: { type: new GraphQLNonNull(GraphQLInt) },
+                companyId: { type: GraphQLString }
+            },
+            //resolve here is where you undergo the operation to do the mutation
+            resolve(parentValue, { firstName, age }) {
+                return axios.post('http://localhost:3000/users', { firstName, age })
+                    .then(resp => resp.data);
+            }
+        },
+        deleteUser: {
+            type: UserType,
+            args: {
+                userId: { type: new GraphQLNonNull(GraphQLString) }
+            },
+            //userID uses ES6 argument destruction to get that value directly from the args object
+            resolve(parentValue, { userId }) {
+                return axios.delete(`http://localhost:3000/users/${userId}`)
+                    .then(resp => resp.data);
+            }
+        }
+    }
+});
+
 //GraphQLSchema takes in a rootQuery and returns a GraphQL instance
 //can export it to be used in other files of the app
 module.exports = new GraphQLSchema({
-    query: RootQuery
+    query: RootQuery,
+    mutation
 });
