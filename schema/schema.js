@@ -112,6 +112,22 @@ const mutation = new GraphQLObjectType({
                 return axios.delete(`http://localhost:3000/users/${userId}`)
                     .then(resp => resp.data);
             }
+        },
+        editUser: {
+            //want the updated user to be returned
+            type: UserType,
+            args: {
+                //id is required to identify the user, other args are optional
+                userId: { type: new GraphQLNonNull(GraphQLString) },
+                firstName: { type: GraphQLString },
+                age: { type: GraphQLInt },
+                companyId: { type: GraphQLString }
+            },
+            resolve(parentValue, args) {
+                //with axios patch, and you pass the ID in the args object it won't update it (part of the axios lib function)
+                return axios.patch(`http://localhost:3000/users/${args.userId}`, args)
+                    .then(resp => resp.data); 
+            }
         }
     }
 });
